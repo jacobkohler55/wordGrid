@@ -15,8 +15,10 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         h1 {
@@ -26,10 +28,16 @@
 
         p {
             color: #666;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .hint-small {
+            font-size: 0.85rem;
+            color: #999;
             margin-bottom: 20px;
         }
 
-        /* The 4x4 Grid Container */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(4, 120px);
@@ -41,7 +49,6 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.1);
         }
 
-        /* Individual Grid Squares */
         .grid-item {
             background-color: #e0f2f1;
             border: 2px solid #004d40;
@@ -57,6 +64,7 @@
             user-select: none;
             text-align: center;
             padding: 5px;
+            position: relative;
         }
 
         .grid-item:hover {
@@ -64,12 +72,33 @@
             transform: scale(1.03);
         }
 
-        /* Visual indicator for the first selected square */
         .grid-item.selected {
             background-color: #ffb74d;
             border-color: #f57c00;
             color: #e65100;
             transform: scale(1.05);
+        }
+
+        .grid-item.editing {
+            background-color: #ffffff;
+            border-color: #1D9E75;
+            padding: 0;
+            transform: scale(1.05);
+        }
+
+        .grid-item input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #004d40;
+            outline: none;
+            padding: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
         }
     </style>
 </head>
@@ -77,55 +106,127 @@
 
     <h1>16-Square Word Grid</h1>
     <p>Click a square, then click another to swap their positions.</p>
+    <p class="hint-small">Hold any square to edit its word.</p>
 
-    <div class="grid-container" id="grid">
-        <!-- 16 Squares with pre-assigned words (Change these words as you like) -->
-        <div class="grid-item">Apple</div>
-        <div class="grid-item">Banana</div>
-        <div class="grid-item">Cherry</div>
-        <div class="grid-item">Date</div>
-        <div class="grid-item">Elderberry</div>
-        <div class="grid-item">Fig</div>
-        <div class="grid-item">Grape</div>
-        <div class="grid-item">Honeydew</div>
-        <div class="grid-item">Iceberg</div>
-        <div class="grid-item">Jackfruit</div>
-        <div class="grid-item">Kiwi</div>
-        <div class="grid-item">Lemon</div>
-        <div class="grid-item">Mango</div>
-        <div class="grid-item">Nectarine</div>
-        <div class="grid-item">Orange</div>
-        <div class="grid-item">Papaya</div>
-    </div>
+    <div class="grid-container" id="grid"></div>
 
     <script>
+        const words = [
+            "Apple", "Banana", "Cherry", "Date",
+            "Elderberry", "Fig", "Grape", "Honeydew",
+            "Iceberg", "Jackfruit", "Kiwi", "Lemon",
+            "Mango", "Nectarine", "Orange", "Papaya"
+        ];
+
         const grid = document.getElementById('grid');
         let firstSelected = null;
+        let holdTimer = null;
+        let didHold = false;
+        let currentlyEditing = null;
 
-        grid.addEventListener('click', (e) => {
-            // Make sure the user clicked a grid item
-            const clickedItem = e.target.closest('.grid-item');
-            if (!clickedItem) return;
+        function buildGrid() {
+            grid.innerHTML = '';
+            words.forEach((word, i) => {
+                const div = document.createElement('div');
+                div.className = 'grid-item';
+                div.textContent = word;
+                div.dataset.index = i;
+                attachEvents(div);
+                grid.appendChild(div);
+            });
+        }
 
+        function attachEvents(div) {
+            div.addEventListener('mousedown', () => {
+                didHold = false;
+                holdTimer = setTimeout(() => {
+                    didHold = true;
+                    enterEditMode(div);
+                }, 500);
+            });
+
+            div.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                didHold = false;
+                holdTimer = setTimeout(() => {
+                    didHold = true;
+                    enterEditMode(div);
+                }, 500);
+            }, { passive: false });
+
+            div.addEventListener('mouseup', cancelHold);
+            div.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                cancelHold();
+            });
+            div.addEventListener('mouseleave', cancelHold);
+
+            div.addEventListener('click', () => {
+                if (didHold || currentlyEditing !== null) return;
+                handleSwap(div);
+            });
+        }
+
+        function cancelHold() {
+            if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        }
+
+        function handleSwap(div) {
             if (firstSelected === null) {
-                // First selection
-                firstSelected = clickedItem;
-                firstSelected.classList.add('selected');
-            } else if (firstSelected === clickedItem) {
-                // Deselect if clicking the same square again
-                firstSelected.classList.remove('selected');
+                firstSelected = div;
+                div.classList.add('selected');
+            } else if (firstSelected === div) {
+                div.classList.remove('selected');
                 firstSelected = null;
             } else {
-                // Second selection: Swap the text content
                 const tempText = firstSelected.textContent;
-                firstSelected.textContent = clickedItem.textContent;
-                clickedItem.textContent = tempText;
+                firstSelected.textContent = div.textContent;
+                div.textContent = tempText;
 
-                // Reset selection styling
+                const iA = parseInt(firstSelected.dataset.index);
+                const iB = parseInt(div.dataset.index);
+                [words[iA], words[iB]] = [words[iB], words[iA]];
+
                 firstSelected.classList.remove('selected');
                 firstSelected = null;
             }
-        });
+        }
+
+        function enterEditMode(div) {
+            if (firstSelected) { firstSelected.classList.remove('selected'); firstSelected = null; }
+            currentlyEditing = div;
+            const originalText = div.textContent.trim();
+            div.textContent = '';
+            div.classList.add('editing');
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalText;
+            input.maxLength = 14;
+            div.appendChild(input);
+            input.focus();
+            input.select();
+
+            function finishEdit() {
+                const newText = input.value.trim() || originalText;
+                div.removeChild(input);
+                div.textContent = newText;
+                div.classList.remove('editing');
+                words[div.dataset.index] = newText;
+                currentlyEditing = null;
+                didHold = false;
+            }
+
+            input.addEventListener('blur', finishEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') input.blur();
+                if (e.key === 'Escape') { input.value = originalText; input.blur(); }
+                e.stopPropagation();
+            });
+            input.addEventListener('click', (e) => e.stopPropagation());
+        }
+
+        buildGrid();
     </script>
 
 </body>
