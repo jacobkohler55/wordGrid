@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Word Grid">
+    <title>Interactive 16-Square Word Grid</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* The 4x4 Grid Container */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 120px);
+            grid-template-rows: repeat(4, 120px);
+            gap: 12px;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        /* Individual Grid Squares */
+        .grid-item {
+            background-color: #e0f2f1;
+            border: 2px solid #004d40;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #004d40;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .grid-item:hover {
+            background-color: #b2dfdb;
+            transform: scale(1.03);
+        }
+
+        /* Visual indicator for the first selected square */
+        .grid-item.selected {
+            background-color: #ffb74d;
+            border-color: #f57c00;
+            color: #e65100;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>16-Square Word Grid</h1>
+    <p>Click a square, then click another to swap their positions.</p>
+
+    <div class="grid-container" id="grid">
+        <!-- 16 Squares with pre-assigned words (Change these words as you like) -->
+        <div class="grid-item">Apple</div>
+        <div class="grid-item">Banana</div>
+        <div class="grid-item">Cherry</div>
+        <div class="grid-item">Date</div>
+        <div class="grid-item">Elderberry</div>
+        <div class="grid-item">Fig</div>
+        <div class="grid-item">Grape</div>
+        <div class="grid-item">Honeydew</div>
+        <div class="grid-item">Iceberg</div>
+        <div class="grid-item">Jackfruit</div>
+        <div class="grid-item">Kiwi</div>
+        <div class="grid-item">Lemon</div>
+        <div class="grid-item">Mango</div>
+        <div class="grid-item">Nectarine</div>
+        <div class="grid-item">Orange</div>
+        <div class="grid-item">Papaya</div>
+    </div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        let firstSelected = null;
+
+        grid.addEventListener('click', (e) => {
+            // Make sure the user clicked a grid item
+            const clickedItem = e.target.closest('.grid-item');
+            if (!clickedItem) return;
+
+            if (firstSelected === null) {
+                // First selection
+                firstSelected = clickedItem;
+                firstSelected.classList.add('selected');
+            } else if (firstSelected === clickedItem) {
+                // Deselect if clicking the same square again
+                firstSelected.classList.remove('selected');
+                firstSelected = null;
+            } else {
+                // Second selection: Swap the text content
+                const tempText = firstSelected.textContent;
+                firstSelected.textContent = clickedItem.textContent;
+                clickedItem.textContent = tempText;
+
+                // Reset selection styling
+                firstSelected.classList.remove('selected');
+                firstSelected = null;
+            }
+        });
+    </script>
+
+</body>
+</html>
